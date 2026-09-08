@@ -1,0 +1,6 @@
+-- Historical compatibility marker.
+-- The SECURITY INVOKER public wrappers and private privileged RPC boundary from
+-- migration 20260908084233 are already incorporated into the canonical Phase C
+-- replay migration 20260908083939_phase_c_assessment_catalog_and_awardee_flow.sql.
+--
+-- This no-op file preserves migration-version parity with the Supabase cloud history.
