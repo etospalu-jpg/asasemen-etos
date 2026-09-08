@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,8 +21,24 @@ jobs:
         with:
           node-version: 22
 
+      - name: Generate dependency lockfile
+        if: ${{ hashFiles('package-lock.json') == '' }}
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit dependency lockfile
+        if: ${{ github.event_name == 'push' && hashFiles('package-lock.json') != '' }}
+        run: |
+          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: lock dependencies"
+          git push
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Next.js
         run: npm run build
