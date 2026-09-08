@@ -1,0 +1,9 @@
+create index if not exists assessment_questions_dimension_id_idx on public.assessment_questions(dimension_id);
+create index if not exists assessment_results_module_id_idx on public.assessment_results(module_id);
+create index if not exists assessment_sessions_module_id_idx on public.assessment_sessions(module_id);
+create index if not exists assessment_sessions_version_id_idx on public.assessment_sessions(version_id);
+create index if not exists assessment_signals_question_id_idx on public.assessment_signals(question_id);
+create index if not exists followups_facilitator_id_idx on public.followups(facilitator_id);
+create index if not exists followups_signal_id_idx on public.followups(signal_id);
+create index if not exists generated_documents_generated_by_idx on public.generated_documents(generated_by);
+create index if not exists generated_documents_period_id_idx on public.generated_documents(period_id);
