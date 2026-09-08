@@ -1,0 +1,6 @@
+-- Historical compatibility marker.
+-- The get_awardee_module row-assignment fix from migration 20260908084037
+-- is already incorporated into the canonical Phase C replay migration
+-- 20260908083939_phase_c_assessment_catalog_and_awardee_flow.sql.
+--
+-- This no-op file preserves migration-version parity with the Supabase cloud history.
