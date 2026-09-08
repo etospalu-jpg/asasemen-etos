@@ -54,6 +54,8 @@ export default async function DashboardPage() {
   const moduleRows = modules ?? []
   const awardeeRows = awardees ?? []
   const moduleCount = moduleRows.length
+  const canSeePrivate = profile?.role === 'superadmin' || Boolean(profile?.can_view_private)
+  const canExport = profile?.role === 'superadmin' || Boolean(profile?.can_export)
 
   const sessionMap = new Map<string, Map<string, SessionRow['status']>>()
   for (const session of sessionRows) {
@@ -90,6 +92,8 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="fac-actions">
+          {canSeePrivate && <Link href="/dashboard/support" className="fac-link">Support Inbox</Link>}
+          {canExport && <Link href="/dashboard/exports" className="fac-link">Export History</Link>}
           <Link href="/assessment" className="fac-link">Awardee Portal</Link>
           <form action="/auth/signout" method="post">
             <button className="fac-button" type="submit">Keluar</button>
@@ -104,8 +108,8 @@ export default async function DashboardPage() {
           <p>Pantau penyelesaian assessment awardee, buka jawaban detail, dan identifikasi kebutuhan tindak lanjut dari satu workspace.</p>
           <div className="fac-identity">
             <span className="fac-chip">{profile?.role ?? 'role belum diatur'}</span>
-            <span className="fac-chip">Private: {profile?.can_view_private ? 'diizinkan' : 'dibatasi'}</span>
-            <span className="fac-chip">Export: {profile?.can_export ? 'diizinkan' : 'dibatasi'}</span>
+            <span className="fac-chip">Private: {canSeePrivate ? 'diizinkan' : 'dibatasi'}</span>
+            <span className="fac-chip">Export: {canExport ? 'diizinkan' : 'dibatasi'}</span>
           </div>
         </div>
         <div className="fac-period">
