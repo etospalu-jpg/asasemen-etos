@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://yciuuorvacjjrpyyqpqb.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Lytb2nL_fN44MlPSlzxYwg_93qGNwz-
+
 jobs:
   build:
     runs-on: ubuntu-latest

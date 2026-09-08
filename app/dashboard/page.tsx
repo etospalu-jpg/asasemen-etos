@@ -1,99 +1,158 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+
+type SessionRow = {
+  awardee_id: string
+  status: 'not_started' | 'in_progress' | 'completed' | 'locked'
+  module_id: string
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: claimsData } = await supabase.auth.getClaims()
   const userId = claimsData?.claims?.sub
 
-  if (!userId) {
-    redirect('/login')
-  }
+  if (!userId) redirect('/login')
 
-  const [{ data: profile }, { data: modules, error: moduleError }] = await Promise.all([
+  const [{ data: profile }, { data: period }, { data: modules }] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, email, role, can_view_private, can_export')
       .eq('id', userId)
       .maybeSingle(),
     supabase
+      .from('assessment_periods')
+      .select('id, code, name, year, semester')
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
       .from('assessment_modules')
-      .select('code, title, restricted, sort_order')
+      .select('id, code, title, restricted, sort_order')
       .eq('active', true)
       .order('sort_order'),
   ])
 
+  const [{ data: awardees, error: awardeeError }, { data: sessions }] = await Promise.all([
+    supabase
+      .from('awardees')
+      .select('id, full_name, campus, major, cohort')
+      .eq('status', 'active')
+      .order('full_name'),
+    period
+      ? supabase
+          .from('assessment_sessions')
+          .select('awardee_id, status, module_id')
+          .eq('period_id', period.id)
+      : Promise.resolve({ data: [] as SessionRow[] }),
+  ])
+
+  const sessionRows = (sessions ?? []) as SessionRow[]
+  const moduleRows = modules ?? []
+  const awardeeRows = awardees ?? []
+  const moduleCount = moduleRows.length
+
+  const sessionMap = new Map<string, Map<string, SessionRow['status']>>()
+  for (const session of sessionRows) {
+    const current = sessionMap.get(session.awardee_id) ?? new Map<string, SessionRow['status']>()
+    current.set(session.module_id, session.status)
+    sessionMap.set(session.awardee_id, current)
+  }
+
+  const rows = awardeeRows.map((awardee) => {
+    const statuses = sessionMap.get(awardee.id) ?? new Map<string, SessionRow['status']>()
+    const completed = moduleRows.filter((module) => statuses.get(module.id) === 'completed').length
+    const inProgress = moduleRows.some((module) => statuses.get(module.id) === 'in_progress')
+    return {
+      ...awardee,
+      statuses,
+      completed,
+      percent: moduleCount === 0 ? 0 : Math.round((completed / moduleCount) * 100),
+      overall: completed === moduleCount && moduleCount > 0 ? 'completed' : inProgress ? 'in_progress' : 'not_started',
+    }
+  })
+
+  const completedCount = rows.filter((row) => row.overall === 'completed').length
+  const inProgressCount = rows.filter((row) => row.overall === 'in_progress').length
+  const notStartedCount = rows.filter((row) => row.overall === 'not_started').length
+
   return (
-    <main className="dashboard-shell">
-      <header className="dashboard-topbar">
-        <div className="brand-row">
-          <div className="brand-mark" aria-hidden="true">E</div>
+    <main className="fac-shell">
+      <header className="fac-topbar">
+        <div className="fac-brand">
+          <div className="fac-brand-mark" aria-hidden="true">E</div>
           <div>
-            <p className="eyebrow">ETOS Assessment Center</p>
-            <p className="brand-subtitle">Facilitator Workspace</p>
+            <strong>ETOS Assessment Center</strong>
+            <small>Facilitator Workspace</small>
           </div>
         </div>
-        <form action="/auth/signout" method="post">
-          <button className="secondary-button" type="submit">Keluar</button>
-        </form>
+        <div className="fac-actions">
+          <Link href="/assessment" className="fac-link">Awardee Portal</Link>
+          <form action="/auth/signout" method="post">
+            <button className="fac-button" type="submit">Keluar</button>
+          </form>
+        </div>
       </header>
 
-      <section className="dashboard-welcome">
+      <section className="fac-hero">
         <div>
-          <span className="status-pill">Foundation Active</span>
+          <span className="fac-kicker">Assessment Overview</span>
           <h1>Halo, {profile?.full_name || 'Fasilitator'}.</h1>
-          <p>
-            Infrastruktur authentication, role, RLS, dan database assessment sudah aktif.
-            Modul operasional akan dibangun pada fase berikutnya.
-          </p>
-        </div>
-        <div className="connection-card">
-          <span className={moduleError ? 'dot dot-error' : 'dot'} />
-          <div>
-            <strong>{moduleError ? 'Periksa konfigurasi' : 'Supabase terhubung'}</strong>
-            <small>{moduleError ? moduleError.message : 'RLS-protected query berhasil'}</small>
+          <p>Pantau penyelesaian assessment awardee, buka jawaban detail, dan identifikasi kebutuhan tindak lanjut dari satu workspace.</p>
+          <div className="fac-identity">
+            <span className="fac-chip">{profile?.role ?? 'role belum diatur'}</span>
+            <span className="fac-chip">Private: {profile?.can_view_private ? 'diizinkan' : 'dibatasi'}</span>
+            <span className="fac-chip">Export: {profile?.can_export ? 'diizinkan' : 'dibatasi'}</span>
           </div>
+        </div>
+        <div className="fac-period">
+          <span>Periode aktif</span>
+          <strong>{period?.name ?? 'Belum ada periode'}</strong>
+          <small>{period ? `${period.year} · Semester ${period.semester}` : 'Atur periode assessment terlebih dahulu'}</small>
         </div>
       </section>
 
-      <section className="metric-grid" aria-label="Foundation status">
-        <article className="metric-card">
-          <span>Role</span>
-          <strong>{profile?.role ?? 'belum dikonfigurasi'}</strong>
-          <small>Authorization berasal dari database, bukan user metadata.</small>
-        </article>
-        <article className="metric-card">
-          <span>Private Assessment</span>
-          <strong>{profile?.can_view_private ? 'Diizinkan' : 'Dibatasi'}</strong>
-          <small>Akses jawaban sensitif memiliki permission terpisah.</small>
-        </article>
-        <article className="metric-card">
-          <span>PDF Export</span>
-          <strong>{profile?.can_export ? 'Diizinkan' : 'Dibatasi'}</strong>
-          <small>Download laporan akan dicatat pada audit trail.</small>
-        </article>
+      <section className="fac-metrics" aria-label="Ringkasan assessment">
+        <article className="fac-metric"><span>Total Awardee</span><strong>{rows.length}</strong><small>sesuai scope akses Anda</small></article>
+        <article className="fac-metric"><span>Selesai</span><strong>{completedCount}</strong><small>3 dari 3 modul</small></article>
+        <article className="fac-metric"><span>Sedang Mengisi</span><strong>{inProgressCount}</strong><small>memiliki progress aktif</small></article>
+        <article className="fac-metric"><span>Belum Mulai</span><strong>{notStartedCount}</strong><small>belum memiliki sesi aktif</small></article>
       </section>
 
-      <section className="foundation-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Assessment V1</p>
-            <h2>Modul yang tersedia</h2>
+      <section className="fac-panel">
+        <div className="fac-panel-head">
+          <div><span className="fac-kicker">Awardee</span><h2>Progress Assessment</h2></div>
+          <p>{moduleCount} modul · {rows.length} awardee</p>
+        </div>
+
+        {awardeeError ? (
+          <div className="fac-error">Data awardee belum dapat dibaca: {awardeeError.message}</div>
+        ) : rows.length === 0 ? (
+          <div className="fac-empty">Belum ada awardee yang tersedia pada scope akun ini.</div>
+        ) : (
+          <div className="fac-table-wrap">
+            <table className="fac-table">
+              <thead><tr><th>Awardee</th><th>Angkatan</th>{moduleRows.map((module) => <th key={module.id}>{module.title}</th>)}<th>Progress</th><th /></tr></thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td><span className="fac-name">{row.full_name}</span><span className="fac-sub">{row.campus || 'Kampus belum diisi'} · {row.major || 'Jurusan belum diisi'}</span></td>
+                    <td>{row.cohort ?? '—'}</td>
+                    {moduleRows.map((module) => {
+                      const status = row.statuses.get(module.id) ?? 'not_started'
+                      return <td key={module.id}><span className={`fac-status ${status}`}>{status === 'completed' ? '✓ Selesai' : status === 'in_progress' ? 'Sedang diisi' : 'Belum'}</span></td>
+                    })}
+                    <td><div className="fac-progress"><div className="fac-progress-track"><span style={{ width: `${row.percent}%` }} /></div><strong>{row.percent}%</strong></div></td>
+                    <td><Link className="fac-view" href={`/dashboard/awardees/${row.id}`}>Lihat Detail →</Link></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <span>{modules?.length ?? 0} modul</span>
-        </div>
-        <div className="foundation-modules">
-          {(modules ?? []).map((module, index) => (
-            <article key={module.code} className="foundation-module">
-              <div className="module-number">{String(index + 1).padStart(2, '0')}</div>
-              <div>
-                <h3>{module.title}</h3>
-                <p>{module.restricted ? 'Private assessment · akses terbatas' : 'Standard assessment'}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        )}
       </section>
     </main>
   )

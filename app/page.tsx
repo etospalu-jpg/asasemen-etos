@@ -1,20 +1,22 @@
+import Link from 'next/link'
+
 const modules = [
   {
-    number: "01",
-    title: "Mengenal Diri",
-    subtitle: "Profil karakter, temperamen, dan gaya interaksi.",
+    number: '01',
+    title: 'Mengenal Diri',
+    subtitle: 'Profil karakter, temperamen, dan gaya interaksi.',
   },
   {
-    number: "02",
-    title: "Memahami Diri",
-    subtitle: "Emosi, ketangguhan, dan kebutuhan pendampingan.",
+    number: '02',
+    title: 'Memahami Diri',
+    subtitle: 'Emosi, ketangguhan, dan kebutuhan pendampingan.',
   },
   {
-    number: "03",
-    title: "Menentukan Arah",
-    subtitle: "Minat, cita-cita, karier, dan kontribusi.",
+    number: '03',
+    title: 'Menentukan Arah',
+    subtitle: 'Minat, cita-cita, karier, dan kontribusi.',
   },
-];
+]
 
 export default function HomePage() {
   return (
@@ -30,7 +32,7 @@ export default function HomePage() {
 
         <div className="hero-grid">
           <div className="hero-copy">
-            <span className="status-pill">Infrastructure ready</span>
+            <span className="status-pill">Assessment Portal</span>
             <h1>
               Kenali dirimu.
               <br />
@@ -43,8 +45,8 @@ export default function HomePage() {
               pendampingan, dan pengembangan yang lebih personal.
             </p>
             <div className="hero-actions">
-              <button type="button" className="primary-button">Mulai Assessment</button>
-              <button type="button" className="secondary-button">Login Fasilitator</button>
+              <Link href="/assessment" className="primary-button">Mulai Assessment</Link>
+              <Link href="/login" className="secondary-button">Login Fasilitator</Link>
             </div>
           </div>
 
@@ -64,8 +66,8 @@ export default function HomePage() {
 
       <footer>
         <span>ETOS Assessment Center</span>
-        <span>Foundation build · Phase A.2</span>
+        <span>Assessment experience · Phase C</span>
       </footer>
     </main>
-  );
+  )
 }
