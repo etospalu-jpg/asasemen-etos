@@ -123,13 +123,11 @@ export default async function SupportInboxPage() {
               ) : (
                 <form action={createFollowupAction} className="ops-followup-form">
                   <input type="hidden" name="signal_id" value={signal.id} />
+                  <input type="hidden" name="signal_status" value="closed" />
                   <div className="ops-grid two"><label>Kategori<input name="category" placeholder="Akademik / keluarga / personal" /></label><label>Deadline<input type="date" name="deadline" /></label></div>
                   <label>Catatan awal<textarea name="notes" rows={3} placeholder="Konteks yang perlu dibahas bersama awardee" /></label>
                   <label>Rencana tindak lanjut<textarea name="action" rows={2} placeholder="Contoh: jadwalkan percakapan 1-on-1" /></label>
-                  <div className="ops-form-foot">
-                    <form action={setSignalStatusAction}><input type="hidden" name="signal_id" value={signal.id} /><input type="hidden" name="signal_status" value="closed" /><button className="fac-button ghost" type="submit">Tutup tanpa follow-up</button></form>
-                    <button className="fac-button primary" type="submit">Buat Follow-up</button>
-                  </div>
+                  <div className="ops-form-foot"><button className="fac-button ghost" formAction={setSignalStatusAction} type="submit">Tutup tanpa follow-up</button><button className="fac-button primary" type="submit">Buat Follow-up</button></div>
                 </form>
               )}
             </article>
