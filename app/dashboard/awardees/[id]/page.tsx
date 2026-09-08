@@ -44,6 +44,7 @@ export default async function AwardeeDetailPage({ params }: PageProps) {
   if (!awardee) notFound()
 
   const canSeePrivate = profile?.role === 'superadmin' || Boolean(profile?.can_view_private)
+  const canExport = profile?.role === 'superadmin' || Boolean(profile?.can_export)
   const moduleRows = modules ?? []
 
   const { data: sessions } = period
@@ -136,6 +137,24 @@ export default async function AwardeeDetailPage({ params }: PageProps) {
           <strong>{completedModules} / {moduleRows.length}</strong>
           <div className="fac-progress-track" style={{ width: '100%', marginTop: 10 }}><span style={{ width: `${percent}%` }} /></div>
           <small style={{ marginTop: 7 }}>{percent}% selesai</small>
+        </div>
+      </section>
+
+      <section className={`fac-export-bar ${canExport ? '' : 'disabled'}`}>
+        <div>
+          <span className="fac-kicker">PDF Export</span>
+          <strong>{canExport ? 'Dokumen siap diunduh dan tercatat di audit trail.' : 'Akun ini belum memiliki permission PDF Export.'}</strong>
+          <small>{canSeePrivate ? 'Private assessment akan ikut pada dokumen dengan tanda RAHASIA.' : 'Bagian private assessment tetap dibatasi.'}</small>
+        </div>
+        <div className="fac-export-buttons">
+          {canExport ? (
+            <>
+              <a className="fac-export-button secondary" href={`/dashboard/awardees/${awardee.id}/export?type=raw`}>Download PDF Jawaban</a>
+              <a className="fac-export-button" href={`/dashboard/awardees/${awardee.id}/export?type=full`}>Download Laporan Lengkap</a>
+            </>
+          ) : (
+            <span className="fac-export-disabled">PDF Export dibatasi</span>
+          )}
         </div>
       </section>
 
@@ -232,7 +251,7 @@ export default async function AwardeeDetailPage({ params }: PageProps) {
           <div className="fac-profile-row"><span>Periode</span><strong>{period?.name ?? 'Belum ada periode aktif'}</strong></div>
           <div className="fac-profile-row"><span>Angkatan</span><strong>{awardee.cohort ?? '—'}</strong></div>
           <div className="fac-profile-row"><span>Private Access</span><strong>{canSeePrivate ? 'Diizinkan' : 'Dibatasi'}</strong></div>
-          <div className="fac-profile-row"><span>PDF Export</span><strong>{profile?.can_export || profile?.role === 'superadmin' ? 'Diizinkan' : 'Dibatasi'}</strong></div>
+          <div className="fac-profile-row"><span>PDF Export</span><strong>{canExport ? 'Diizinkan' : 'Dibatasi'}</strong></div>
         </aside>
 
         <div className="fac-answer-panel">
